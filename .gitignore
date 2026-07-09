@@ -1,0 +1,29 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv-comet/
+*.egg-info/
+dist/
+build/
+
+# Large / regenerable data
+raw_sichuanese_data.csv
+wsc_metadata.jsonl
+
+# Internal / not for release
+coauthor_review/
+paper_outline_revised.md
+paper.zip
+paper_overleaf.zip
+
+# OS & editor
+.DS_Store
+.idea/
+.vscode/
+
+# Optional large artifacts
+translation_eval_report.pdf

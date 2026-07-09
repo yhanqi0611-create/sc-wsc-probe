@@ -1,0 +1,5 @@
+# COMET scoring: use Python 3.9 venv (unbabel-comet may fail on 3.12+)
+#   python3.9 -m venv .venv-comet
+#   source .venv-comet/bin/activate
+#   pip install -r requirements-comet.txt
+unbabel-comet>=2.2

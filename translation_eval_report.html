@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>四川话→英文 翻译质量：方言词分层评估</title>
+<style>
+  :root { --fg:#1a1a1a; --fg2:#5b5b5b; --fg3:#8a8a8a; --line:#e3e3e3; --bg:#fff; --surf:#fafafa; --low:#fdecec; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif; }
+  .wrap { max-width:1040px; margin:0 auto; padding:32px 24px 64px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  h2 { font-size:18px; margin:32px 0 12px; }
+  .sub { color:var(--fg2); margin:0 0 8px; }
+  .muted { color:var(--fg3); }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0; }
+  .stat { border:1px solid var(--line); border-radius:8px; padding:14px 16px; }
+  .stat .val { font-size:22px; font-weight:600; }
+  .stat .lab { color:var(--fg2); font-size:13px; margin-top:2px; }
+  .stat.good .val { color:#16a34a; }
+  .stat.warn .val { color:#b45309; }
+  .callout { border:1px solid #f0d8a8; background:#fdf6e9; border-radius:8px; padding:14px 16px; margin:14px 0; }
+  .callout.n { border-color:var(--line); background:var(--surf); }
+  .callout b { color:#a15c00; }
+  .legend { display:flex; gap:18px; margin:4px 0 14px; font-size:13px; color:var(--fg2); }
+  .lg { display:flex; align-items:center; gap:6px; } .lg i { width:12px;height:12px;border-radius:3px;display:inline-block; }
+  .bar-row { display:grid; grid-template-columns:150px 1fr 1fr; gap:8px; align-items:center; padding:5px 0; }
+  .bar-label { font-size:13px; }
+  .bar-track { position:relative; background:var(--surf); border-radius:4px; height:22px; }
+  .bar { height:100%; border-radius:4px; }
+  .bar-val { position:absolute; right:6px; top:0; line-height:22px; font-size:12px; color:var(--fg); }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th,td { border-bottom:1px solid var(--line); padding:7px 10px; text-align:left; }
+  th { color:var(--fg2); font-weight:600; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  tr.low { background:var(--low); }
+  .case { border:1px solid var(--line); border-radius:8px; margin:12px 0; overflow:hidden; }
+  .case-head { display:flex; align-items:center; gap:10px; padding:8px 14px; background:var(--surf); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .rank { font-weight:600; }
+  .pills { display:flex; gap:6px; flex-wrap:wrap; }
+  .pill { font-size:12px; border:1px solid #bcd; color:#2563a6; border-radius:10px; padding:1px 8px; background:#eef5fc; }
+  .scores { margin-left:auto; font-size:12px; color:var(--fg2); font-variant-numeric:tabular-nums; }
+  .case-grid { display:grid; grid-template-columns:96px 1fr; gap:8px 12px; padding:14px; }
+  .case-grid .k { color:var(--fg3); font-size:13px; }
+  .case-grid .v.ref { font-weight:500; }
+  .foot { color:var(--fg3); font-size:12px; margin-top:28px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  @page { margin:14mm 12mm; }
+  @media print {
+    body { font-size:12px; }
+    .wrap { max-width:none; padding:0; }
+    .case, .bar-row, tr, .callout, .stat { break-inside:avoid; }
+    h2 { break-after:avoid; }
+    .stats { gap:8px; }
+  }
+</style>
+</head>
+<body><div class="wrap">
+  <h1>四川话 → 英文 翻译质量：方言词分层评估</h1>
+  <p class="sub">按 <b>matched_keywords</b> 分层，对比 GLM-4-Plus 与 DeepSeek-V4-Flash 在每个四川话方言词上的翻译质量，用于定位「文化清洗」洼地。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="val">200</div><div class="lab">方言种子句数</div></div>
+    <div class="stat"><div class="val">70.76 / 70.87</div><div class="lab">系统 COMET (GLM / DS)</div></div>
+    <div class="stat good"><div class="val">73.35</div><div class="lab">逐句 Oracle 上限 (COMET)</div></div>
+    <div class="stat warn"><div class="val">1 / 0</div><div class="lab">拒译数 (GLM / DS)</div></div>
+  </div>
+
+  <div class="callout">
+    <b>质量洼地 = 文化清洗信号。</b> 实义方言词 安逸 / 老子 / 老表 / 婆娘 / 龟儿子 / 幺 的 COMET 明显低于全局均值（~70.8）：
+    模型常把「安逸」直译为 comfortable、把「老子(=我)」误解为 father/Laozi，丢失方言语用色彩。相比之下，语气词 哈/嘛/哦 的 COMET 在 71~73，质量损失主要集中在实义方言词上。
+  </div>
+
+  <h2>各方言词 COMET 对比（语义级，越高越好）</h2>
+  <div class="legend"><span class='lg'><i style='background:#3b82f6'></i>GLM-4-Plus</span><span class='lg'><i style='background:#16a34a'></i>DeepSeek-V4-Flash</span></div>
+  
+        <div class="bar-row">
+          <div class="bar-label">老子 <span class="muted">n=18</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:83.5%;background:#3b82f6"></div>
+            <span class="bar-val">66.8</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:83.4%;background:#16a34a"></div>
+            <span class="bar-val">66.7</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">老表 <span class="muted">n=8</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:84.6%;background:#3b82f6"></div>
+            <span class="bar-val">67.7</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:83.8%;background:#16a34a"></div>
+            <span class="bar-val">67.0</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">婆娘 <span class="muted">n=7</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:86.1%;background:#3b82f6"></div>
+            <span class="bar-val">68.8</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:84.8%;background:#16a34a"></div>
+            <span class="bar-val">67.9</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">安逸 <span class="muted">n=42</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:85.4%;background:#3b82f6"></div>
+            <span class="bar-val">68.3</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:86.3%;background:#16a34a"></div>
+            <span class="bar-val">69.1</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">噻 <span class="muted">n=6</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:87.0%;background:#3b82f6"></div>
+            <span class="bar-val">69.6</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:85.2%;background:#16a34a"></div>
+            <span class="bar-val">68.1</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">硬是 <span class="muted">n=12</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:88.1%;background:#3b82f6"></div>
+            <span class="bar-val">70.5</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:89.2%;background:#16a34a"></div>
+            <span class="bar-val">71.4</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">啥子 <span class="muted">n=44</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:88.4%;background:#3b82f6"></div>
+            <span class="bar-val">70.7</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:89.2%;background:#16a34a"></div>
+            <span class="bar-val">71.4</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">嘛(语气词) <span class="muted">n=19</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:89.0%;background:#3b82f6"></div>
+            <span class="bar-val">71.2</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:89.3%;background:#16a34a"></div>
+            <span class="bar-val">71.5</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">哦(语气词) <span class="muted">n=20</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:90.6%;background:#3b82f6"></div>
+            <span class="bar-val">72.5</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:90.2%;background:#16a34a"></div>
+            <span class="bar-val">72.2</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">哈(语气词) <span class="muted">n=19</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:90.4%;background:#3b82f6"></div>
+            <span class="bar-val">72.3</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:91.5%;background:#16a34a"></div>
+            <span class="bar-val">73.2</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">巴适 <span class="muted">n=20</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:90.1%;background:#3b82f6"></div>
+            <span class="bar-val">72.1</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:93.1%;background:#16a34a"></div>
+            <span class="bar-val">74.5</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">瓜娃子 <span class="muted">n=5</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:96.2%;background:#3b82f6"></div>
+            <span class="bar-val">76.9</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:87.3%;background:#16a34a"></div>
+            <span class="bar-val">69.8</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">咋个 <span class="muted">n=11</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:90.0%;background:#3b82f6"></div>
+            <span class="bar-val">72.0</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:94.1%;background:#16a34a"></div>
+            <span class="bar-val">75.3</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">老汉 <span class="muted">n=5</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:92.3%;background:#3b82f6"></div>
+            <span class="bar-val">73.9</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:94.3%;background:#16a34a"></div>
+            <span class="bar-val">75.4</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">确实 <span class="muted">n=36</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:94.5%;background:#3b82f6"></div>
+            <span class="bar-val">75.6</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:93.7%;background:#16a34a"></div>
+            <span class="bar-val">74.9</span>
+          </div>
+        </div>
+  <p class="muted" style="font-size:12px;margin-top:8px">来源：WSC-Train 200 句 · COMET = Unbabel/wmt22-comet-da ×100 · 仅含 n≥5 的关键词 · 按两模型 COMET 均值升序</p>
+
+  <h2>各方言词 chrF 对比（字符级 F 值，越高越好）</h2>
+  <div class="legend"><span class='lg'><i style='background:#3b82f6'></i>GLM-4-Plus</span><span class='lg'><i style='background:#16a34a'></i>DeepSeek-V4-Flash</span></div>
+  
+        <div class="bar-row">
+          <div class="bar-label">安逸 <span class="muted">n=42</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:61.9%;background:#3b82f6"></div>
+            <span class="bar-val">34.0</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:66.5%;background:#16a34a"></div>
+            <span class="bar-val">36.6</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">老子 <span class="muted">n=18</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:62.5%;background:#3b82f6"></div>
+            <span class="bar-val">34.4</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:68.2%;background:#16a34a"></div>
+            <span class="bar-val">37.5</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">噻 <span class="muted">n=6</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:68.4%;background:#3b82f6"></div>
+            <span class="bar-val">37.6</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:64.8%;background:#16a34a"></div>
+            <span class="bar-val">35.7</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">硬是 <span class="muted">n=12</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:67.5%;background:#3b82f6"></div>
+            <span class="bar-val">37.1</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:71.0%;background:#16a34a"></div>
+            <span class="bar-val">39.0</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">婆娘 <span class="muted">n=7</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:68.9%;background:#3b82f6"></div>
+            <span class="bar-val">37.9</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:70.5%;background:#16a34a"></div>
+            <span class="bar-val">38.8</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">老表 <span class="muted">n=8</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:69.3%;background:#3b82f6"></div>
+            <span class="bar-val">38.1</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:73.7%;background:#16a34a"></div>
+            <span class="bar-val">40.6</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">哦(语气词) <span class="muted">n=20</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:70.3%;background:#3b82f6"></div>
+            <span class="bar-val">38.6</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:75.3%;background:#16a34a"></div>
+            <span class="bar-val">41.4</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">啥子 <span class="muted">n=44</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:73.3%;background:#3b82f6"></div>
+            <span class="bar-val">40.3</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:75.8%;background:#16a34a"></div>
+            <span class="bar-val">41.7</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">嘛(语气词) <span class="muted">n=19</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:74.1%;background:#3b82f6"></div>
+            <span class="bar-val">40.8</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:78.0%;background:#16a34a"></div>
+            <span class="bar-val">42.9</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">哈(语气词) <span class="muted">n=19</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:74.3%;background:#3b82f6"></div>
+            <span class="bar-val">40.9</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:77.8%;background:#16a34a"></div>
+            <span class="bar-val">42.8</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">巴适 <span class="muted">n=20</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:75.0%;background:#3b82f6"></div>
+            <span class="bar-val">41.3</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:78.5%;background:#16a34a"></div>
+            <span class="bar-val">43.2</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">瓜娃子 <span class="muted">n=5</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:83.9%;background:#3b82f6"></div>
+            <span class="bar-val">46.1</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:76.2%;background:#16a34a"></div>
+            <span class="bar-val">41.9</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">确实 <span class="muted">n=36</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:84.0%;background:#3b82f6"></div>
+            <span class="bar-val">46.2</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:81.5%;background:#16a34a"></div>
+            <span class="bar-val">44.9</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">咋个 <span class="muted">n=11</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:83.9%;background:#3b82f6"></div>
+            <span class="bar-val">46.2</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:93.6%;background:#16a34a"></div>
+            <span class="bar-val">51.5</span>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">老汉 <span class="muted">n=5</span></div>
+          <div class="bar-track">
+            <div class="bar" style="width:85.9%;background:#3b82f6"></div>
+            <span class="bar-val">47.2</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar" style="width:92.9%;background:#16a34a"></div>
+            <span class="bar-val">51.1</span>
+          </div>
+        </div>
+  <p class="muted" style="font-size:12px;margin-top:8px">来源：WSC-Train 200 句 · chrF = sacreBLEU chrF2 · 仅含 n≥5 的关键词 · 按两模型 chrF 均值升序</p>
+
+  <h2>显著性检验（配对 bootstrap, B=2000）</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">差值 = DeepSeek-V4-Flash − GLM-4-Plus（正 = DeepSeek 更好）。α=0.05。</p>
+  <table>
+    <thead><tr><th>指标</th><th class="num">观测差</th><th class="num">95% CI</th><th class="num">p (双侧)</th><th>显著</th></tr></thead>
+    <tbody>
+      <tr><td>COMET</td><td class="num">+0.11</td><td class="num">[−0.82, +1.12]</td><td class="num">0.836</td><td>否</td></tr>
+      <tr><td>BLEU</td><td class="num">+0.20</td><td class="num">[−1.47, +1.84]</td><td class="num">0.861</td><td>否</td></tr>
+      <tr class="low"><td>chrF</td><td class="num">+1.98</td><td class="num">[+0.62, +3.40]</td><td class="num">0.006</td><td>是（DeepSeek 更优）</td></tr>
+    </tbody>
+  </table>
+  <div class="callout n" style="margin-top:12px"><b>结论：</b>COMET / BLEU 上两模型<b>无显著差异</b>，仅 chrF 上 DeepSeek-V4-Flash 有<b>小幅但显著</b>的优势。
+  但每类仅 1 个模型（闭源 GLM-4-Plus / DeepSeek-V4-Flash）且均为中文强模型，此结果<b>不足以推广为「开源 vs 闭源整体差距极小」</b>，仅代表这两个具体模型。</div>
+
+  
+  <h2>人工文化充分性评测（gold）</h2>
+  <p class="muted" style="font-size:12px">2 人独立标注后讨论定稿 · Cohen's κ = 0.71 · 参考译文为保留文化义的人工翻译</p>
+
+  <div class="stats" style="grid-template-columns:repeat(5,1fr)">
+    <div class="stat good"><div class="val">14%</div><div class="lab">tie-good 双达标</div></div>
+    <div class="stat warn"><div class="val">28%</div><div class="lab">tie-bad 双失败</div></div>
+    <div class="stat"><div class="val">34%</div><div class="lab">GLM 文化充分率</div></div>
+    <div class="stat"><div class="val">52%</div><div class="lab">DeepSeek 文化充分率</div></div>
+    <div class="stat warn"><div class="val">47%</div><div class="lab">人工 vs COMET 一致率</div></div>
+  </div>
+
+  <h3 style="font-size:15px;margin:20px 0 8px">表 1 · gold 标签分布</h3>
+  <table>
+    <thead><tr><th>标签</th><th class="num">n</th><th class="num">占比</th></tr></thead>
+    <tbody><tr><td>tie-good</td><td class='num'>28</td><td class='num'>14.0%</td></tr><tr><td>g</td><td class='num'>40</td><td class='num'>20.0%</td></tr><tr><td>d</td><td class='num'>76</td><td class='num'>38.0%</td></tr><tr><td>tie-bad</td><td class='num'>56</td><td class='num'>28.0%</td></tr></tbody>
+  </table>
+
+  <h3 style="font-size:15px;margin:20px 0 8px">表 2 · 各 gold 组自动分数均值</h3>
+  <table>
+    <thead><tr><th>gold</th><th class="num">n</th><th class="num">GLM COMET</th><th class="num">DS COMET</th><th class="num">GLM chrF</th><th class="num">DS chrF</th></tr></thead>
+    <tbody><tr><td>tie-good</td><td class='num'>28</td><td class='num'>78.95</td><td class='num'>78.65</td><td class='num'>47.41</td><td class='num'>46.16</td></tr><tr><td>g (仅 GLM)</td><td class='num'>40</td><td class='num'>70.04</td><td class='num'>68.83</td><td class='num'>39.78</td><td class='num'>40.59</td></tr><tr><td>d (仅 DS)</td><td class='num'>76</td><td class='num'>71.45</td><td class='num'>72.01</td><td class='num'>39.45</td><td class='num'>41.74</td></tr><tr><td>tie-bad</td><td class='num'>56</td><td class='num'>66.22</td><td class='num'>66.88</td><td class='num'>35.60</td><td class='num'>38.23</td></tr></tbody>
+  </table>
+
+  <h3 style="font-size:15px;margin:20px 0 8px">表 3 · tie-good vs tie-bad（论点 B 核心）</h3>
+  <table>
+    <thead><tr><th>指标</th><th class="num">tie-good</th><th class="num">tie-bad</th><th class="num">差值</th></tr></thead>
+    <tbody>
+      <tr><td>GLM COMET</td><td class='num'>78.95</td><td class='num'>66.22</td><td class='num'>+12.72</td></tr>
+      <tr><td>DS COMET</td><td class='num'>78.65</td><td class='num'>66.88</td><td class='num'>+11.77</td></tr>
+      <tr><td>GLM chrF</td><td class='num'>47.41</td><td class='num'>35.60</td><td class='num'>+11.81</td></tr>
+      <tr><td>DS chrF</td><td class='num'>46.16</td><td class='num'>38.23</td><td class='num'>+7.92</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;margin:20px 0 8px">图 1 · tie-good vs tie-bad 的 COMET 分布</h3>
+  <svg viewBox="0 0 640 220" width="100%" style="max-width:640px" xmlns="http://www.w3.org/2000/svg">
+  <text x="48" y="18" font-size="13" fill="#333">逐句平均 COMET 分布（(GLM+DS)/2）</text>
+  <line x1="48" y1="172" x2="620" y2="172" stroke="#ccc"/>
+  <rect x="48" y="172" width="14" height="0" fill="#16a34a" rx="2"/><rect x="64" y="163" width="14" height="9" fill="#dc2626" rx="2"/><text x="71" y="159" text-anchor="middle" font-size="10" fill="#444">1</text><text x="62" y="188" text-anchor="middle" font-size="11" fill="#666">50-55</text><rect x="90" y="144" width="14" height="28" fill="#16a34a" rx="2"/><text x="97" y="140" text-anchor="middle" font-size="10" fill="#444">3</text><rect x="106" y="78" width="14" height="94" fill="#dc2626" rx="2"/><text x="113" y="74" text-anchor="middle" font-size="10" fill="#444">10</text><text x="104" y="188" text-anchor="middle" font-size="11" fill="#666">55-60</text><rect x="132" y="172" width="14" height="0" fill="#16a34a" rx="2"/><rect x="148" y="78" width="14" height="94" fill="#dc2626" rx="2"/><text x="155" y="74" text-anchor="middle" font-size="10" fill="#444">10</text><text x="146" y="188" text-anchor="middle" font-size="11" fill="#666">60-65</text><rect x="174" y="154" width="14" height="18" fill="#16a34a" rx="2"/><text x="181" y="150" text-anchor="middle" font-size="10" fill="#444">2</text><rect x="190" y="30" width="14" height="142" fill="#dc2626" rx="2"/><text x="197" y="26" text-anchor="middle" font-size="10" fill="#444">15</text><text x="188" y="188" text-anchor="middle" font-size="11" fill="#666">65-70</text><rect x="216" y="116" width="14" height="56" fill="#16a34a" rx="2"/><text x="223" y="112" text-anchor="middle" font-size="10" fill="#444">6</text><rect x="232" y="97" width="14" height="75" fill="#dc2626" rx="2"/><text x="239" y="93" text-anchor="middle" font-size="10" fill="#444">8</text><text x="230" y="188" text-anchor="middle" font-size="11" fill="#666">70-75</text><rect x="258" y="154" width="14" height="18" fill="#16a34a" rx="2"/><text x="265" y="150" text-anchor="middle" font-size="10" fill="#444">2</text><rect x="274" y="87" width="14" height="85" fill="#dc2626" rx="2"/><text x="281" y="83" text-anchor="middle" font-size="10" fill="#444">9</text><text x="272" y="188" text-anchor="middle" font-size="11" fill="#666">75-80</text><rect x="300" y="106" width="14" height="66" fill="#16a34a" rx="2"/><text x="307" y="102" text-anchor="middle" font-size="10" fill="#444">7</text><rect x="316" y="172" width="14" height="0" fill="#dc2626" rx="2"/><text x="314" y="188" text-anchor="middle" font-size="11" fill="#666">80-85</text><rect x="342" y="135" width="14" height="37" fill="#16a34a" rx="2"/><text x="349" y="131" text-anchor="middle" font-size="10" fill="#444">4</text><rect x="358" y="172" width="14" height="0" fill="#dc2626" rx="2"/><text x="356" y="188" text-anchor="middle" font-size="11" fill="#666">85-90</text>
+  <rect x="440" y="8" width="10" height="10" fill="#16a34a"/><text x="455" y="17" font-size="11" fill="#666">tie-good (n=28)</text>
+  <rect x="440" y="24" width="10" height="10" fill="#dc2626"/><text x="455" y="33" font-size="11" fill="#666">tie-bad (n=56)</text>
+</svg>
+  <p class="muted" style="font-size:12px;margin-top:6px">tie-good 均值 78.9/78.7 · tie-bad 均值 66.2/66.9 · 但 tie-bad 仍接近全局 COMET (~70.9)</p>
+
+  <h3 style="font-size:15px;margin:20px 0 8px">表 4 · 人工 vs 自动指标</h3>
+  <table>
+    <thead><tr><th>对比项</th><th class="num">结果</th></tr></thead>
+    <tbody>
+      <tr><td>人工 d/g vs COMET 胜者一致率（仅 d/g 句）</td><td class="num">54/116 (46.6%)</td></tr>
+      <tr><td>tie-bad 句中 COMET 仍判 DeepSeek 更优</td><td class="num">50.0%</td></tr>
+      <tr><td>tie-bad 句 DS COMET 均值 vs 全局</td><td class="num">66.88 vs 70.87</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;margin:20px 0 8px">表 5 · tie-bad 率按方言词（n≥5）</h3>
+  <table>
+    <thead><tr><th>方言词</th><th class="num">n</th><th class="num">tie-bad</th><th class="num">比率</th></tr></thead>
+    <tbody><tr class="low"><td>老子</td><td class='num'>18</td><td class='num'>9</td><td class='num'>50.0%</td></tr><tr class="low"><td>婆娘</td><td class='num'>7</td><td class='num'>3</td><td class='num'>42.9%</td></tr><tr class="low"><td>嘛(语气词)</td><td class='num'>19</td><td class='num'>8</td><td class='num'>42.1%</td></tr><tr class="low"><td>老表</td><td class='num'>8</td><td class='num'>3</td><td class='num'>37.5%</td></tr><tr class="low"><td>哈(语气词)</td><td class='num'>19</td><td class='num'>7</td><td class='num'>36.8%</td></tr><tr class="low"><td>咋个</td><td class='num'>11</td><td class='num'>4</td><td class='num'>36.4%</td></tr><tr><td>噻</td><td class='num'>6</td><td class='num'>2</td><td class='num'>33.3%</td></tr><tr><td>啥子</td><td class='num'>44</td><td class='num'>14</td><td class='num'>31.8%</td></tr><tr><td>哦(语气词)</td><td class='num'>20</td><td class='num'>6</td><td class='num'>30.0%</td></tr><tr><td>确实</td><td class='num'>36</td><td class='num'>9</td><td class='num'>25.0%</td></tr><tr><td>安逸</td><td class='num'>42</td><td class='num'>9</td><td class='num'>21.4%</td></tr><tr><td>老汉</td><td class='num'>5</td><td class='num'>1</td><td class='num'>20.0%</td></tr><tr><td>巴适</td><td class='num'>20</td><td class='num'>2</td><td class='num'>10.0%</td></tr><tr><td>硬是</td><td class='num'>12</td><td class='num'>1</td><td class='num'>8.3%</td></tr><tr><td>瓜娃子</td><td class='num'>5</td><td class='num'>0</td><td class='num'>0.0%</td></tr></tbody>
+  </table>
+
+  <div class="callout" style="margin-top:14px"><b>人工评测结论：</b>仅 14% 句子两模型均成功传递文化义；
+  28% 双失败。自动 COMET 能区分 tie-good/tie-bad（差 ~12 分），但 tie-bad 绝对分仍 ~67，
+  人工–COMET 一致率仅 47%，<b>标准化评分系统性低估 culture washing 的严重性</b>。</div>
+
+
+  <h2>关键词全量分层表</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">红色行 = 两模型 COMET 均值 &lt; 67（翻译质量洼地）。按命中句数 n 降序。</p>
+  <table>
+    <thead><tr><th>方言词</th><th class="num">n</th><th class="num">GLM chrF</th><th class="num">DS chrF</th><th class="num">GLM COMET</th><th class="num">DS COMET</th></tr></thead>
+    <tbody><tr><td>啥子</td><td class='num'>44</td><td class='num'>40.3</td><td class='num'>41.7</td><td class='num'>70.7</td><td class='num'>71.4</td></tr><tr><td>安逸</td><td class='num'>42</td><td class='num'>34.0</td><td class='num'>36.6</td><td class='num'>68.3</td><td class='num'>69.1</td></tr><tr><td>确实</td><td class='num'>36</td><td class='num'>46.2</td><td class='num'>44.9</td><td class='num'>75.6</td><td class='num'>74.9</td></tr><tr><td>巴适</td><td class='num'>20</td><td class='num'>41.3</td><td class='num'>43.2</td><td class='num'>72.1</td><td class='num'>74.5</td></tr><tr><td>哦(语气词)</td><td class='num'>20</td><td class='num'>38.6</td><td class='num'>41.4</td><td class='num'>72.5</td><td class='num'>72.2</td></tr><tr><td>嘛(语气词)</td><td class='num'>19</td><td class='num'>40.8</td><td class='num'>42.9</td><td class='num'>71.2</td><td class='num'>71.5</td></tr><tr><td>哈(语气词)</td><td class='num'>19</td><td class='num'>40.9</td><td class='num'>42.8</td><td class='num'>72.3</td><td class='num'>73.2</td></tr><tr class="low"><td>老子</td><td class='num'>18</td><td class='num'>34.4</td><td class='num'>37.5</td><td class='num'>66.8</td><td class='num'>66.7</td></tr><tr><td>硬是</td><td class='num'>12</td><td class='num'>37.1</td><td class='num'>39.0</td><td class='num'>70.5</td><td class='num'>71.4</td></tr><tr><td>咋个</td><td class='num'>11</td><td class='num'>46.2</td><td class='num'>51.5</td><td class='num'>72.0</td><td class='num'>75.3</td></tr><tr><td>老表</td><td class='num'>8</td><td class='num'>38.1</td><td class='num'>40.6</td><td class='num'>67.7</td><td class='num'>67.0</td></tr><tr><td>婆娘</td><td class='num'>7</td><td class='num'>37.9</td><td class='num'>38.8</td><td class='num'>68.8</td><td class='num'>67.9</td></tr><tr><td>噻</td><td class='num'>6</td><td class='num'>37.6</td><td class='num'>35.7</td><td class='num'>69.6</td><td class='num'>68.1</td></tr><tr><td>瓜娃子</td><td class='num'>5</td><td class='num'>46.1</td><td class='num'>41.9</td><td class='num'>76.9</td><td class='num'>69.8</td></tr><tr><td>老汉</td><td class='num'>5</td><td class='num'>47.2</td><td class='num'>51.1</td><td class='num'>73.9</td><td class='num'>75.4</td></tr><tr><td>恼火</td><td class='num'>4</td><td class='num'>39.5</td><td class='num'>41.6</td><td class='num'>77.3</td><td class='num'>74.6</td></tr><tr class="low"><td>幺(称谓/方言)</td><td class='num'>4</td><td class='num'>38.1</td><td class='num'>44.2</td><td class='num'>63.7</td><td class='num'>64.5</td></tr><tr class="low"><td>嘎嘎</td><td class='num'>2</td><td class='num'>30.4</td><td class='num'>27.2</td><td class='num'>67.3</td><td class='num'>61.6</td></tr><tr class="low"><td>龟儿子</td><td class='num'>2</td><td class='num'>38.0</td><td class='num'>33.9</td><td class='num'>59.5</td><td class='num'>57.8</td></tr><tr><td>老太婆</td><td class='num'>1</td><td class='num'>53.0</td><td class='num'>41.8</td><td class='num'>74.9</td><td class='num'>65.5</td></tr><tr><td>得嘛</td><td class='num'>1</td><td class='num'>51.0</td><td class='num'>64.7</td><td class='num'>67.5</td><td class='num'>77.1</td></tr><tr class="low"><td>扯把子</td><td class='num'>1</td><td class='num'>33.2</td><td class='num'>22.6</td><td class='num'>56.6</td><td class='num'>54.7</td></tr><tr class="low"><td>片片</td><td class='num'>1</td><td class='num'>25.5</td><td class='num'>24.3</td><td class='num'>59.4</td><td class='num'>52.0</td></tr><tr class="low"><td>背时</td><td class='num'>1</td><td class='num'>38.7</td><td class='num'>39.5</td><td class='num'>67.8</td><td class='num'>62.3</td></tr><tr class="low"><td>莫得</td><td class='num'>1</td><td class='num'>14.2</td><td class='num'>36.4</td><td class='num'>42.0</td><td class='num'>49.1</td></tr><tr><td>贼娃子</td><td class='num'>1</td><td class='num'>29.9</td><td class='num'>37.7</td><td class='num'>78.1</td><td class='num'>73.0</td></tr><tr class="low"><td>霸道</td><td class='num'>1</td><td class='num'>40.3</td><td class='num'>47.9</td><td class='num'>62.5</td><td class='num'>64.8</td></tr></tbody>
+  </table>
+
+  <h2>逐句最差案例（COMET 最低 15 句）</h2>
+  <div class="callout n"><b>典型误差类型：</b>(1) 实义方言词被直译/误解（安逸→comfortable、老子(=我)→脏话/人名）；(2) 游戏/麻将黑话丢失（幺儿、九通、童子）；(3) ASR 噪声叠加（源文本身连读乱码，放大翻译困难）。</div>
+  
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#1</span>
+            <span class="pills"><span class='pill'>老子</span></span>
+            <span class="scores">COMET&nbsp; GLM 41.3 · DS 39.1</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">脖子掉日你妈肚子是吊啊老子的桌子啊打桌子大</div>
+            <div class="k">参考译文</div><div class="v ref">The cup fell, and you even smashed my table!</div>
+            <div class="k">GLM-4-Plus</div><div class="v">&quot;Neck drop into your mom&#x27;s belly is hanging, ah my table, ah hit the big table.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">Your neck’s hangin’—damn your mom’s belly—it’s danglin’ right on my table, man! Hittin’ the table, big as the table!</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#2</span>
+            <span class="pills"><span class='pill'>安逸</span></span>
+            <span class="scores">COMET&nbsp; GLM 26.9 · DS 54.8</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">谢谢你再找个鱼塘呀有媳妇真安逸红烧菜也有汤也有你怕去跟你小舅舅闹理由订购的火柴总比吃外卖好警车检查对对海带灭就会打开</div>
+            <div class="k">参考译文</div><div class="v ref">Thanks for going to find another fish pond. It&#x27;s great having a wife—there&#x27;s braised food and soup.The meals ordered from your youngest uncle are certainly better than eating takeout.</div>
+            <div class="k">GLM-4-Plus</div><div class="v">REFUSAL</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">Thank you! Find another fish pond. Having a wife is so comfortable. There are braised dishes and soup. You&#x27;re afraid to go and argue with your little uncle. The matches you ordered are always better than ordering takeout. Police car inspection, right. Once the seaweed is gone, it will open.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#3</span>
+            <span class="pills"><span class='pill'>莫得</span><span class='pill'>幺(称谓/方言)</span></span>
+            <span class="scores">COMET&nbsp; GLM 42.0 · DS 49.1</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">幺儿拿我的酒桶你们能干惨了刘九通瞬间莫得了</div>
+            <div class="k">参考译文</div><div class="v ref">You guys are really something when it comes to taking my 9-Dots—the 6-Dots and 9-Dots were gone in a flash. </div>
+            <div class="k">GLM-4-Plus</div><div class="v">Son, take my wine barrel, and you&#x27;ll get Liu Jiutong drunk in an instant.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">My precious little one took my wine barrel — you guys are really something else — and now Liu Jiutong is instantly gone.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#4</span>
+            <span class="pills"><span class='pill'>安逸</span><span class='pill'>哈(语气词)</span></span>
+            <span class="scores">COMET&nbsp; GLM 43.2 · DS 48.3</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">啊和老鹰养狗和飞机养狗个人种地就安逸哈要去那窝</div>
+            <div class="k">参考译文</div><div class="v ref">I swear, having a courtyard to keep a dog and living off your own land is the absolute best.</div>
+            <div class="k">GLM-4-Plus</div><div class="v">It&#x27;s so chill raising dogs, farming, and flying planes. I&#x27;m heading to that nest.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">Ah, raising dogs like an eagle or raising dogs like an airplane—just planting your own land and living the easy life, huh? Gotta go to that nest over there.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#5</span>
+            <span class="pills"><span class='pill'>啥子</span></span>
+            <span class="scores">COMET&nbsp; GLM 48.0 · DS 48.2</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">还好对家还在扯童子出来我这同情应该是没得啥子问题了</div>
+            <div class="k">参考译文</div><div class="v ref">Thankfully, my opposite player is still dumping Circles. At this rate, there shouldn&#x27;t be any problem for my &#x27;Full Flush of Circles&#x27; to win!</div>
+            <div class="k">GLM-4-Plus</div><div class="v">Fortunately, my opponent is still bringing up that childish nonsense, so my sympathy should be pretty solid.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">Fortunately, the opponent is still pulling some childish stunt, so my sympathy here should be no problem at all.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#6</span>
+            <span class="pills"><span class='pill'>硬是</span></span>
+            <span class="scores">COMET&nbsp; GLM 49.0 · DS 48.9</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">刚才不得口子呀你硬是他现在时间咔咔呼噜的</div>
+            <div class="k">参考译文</div><div class="v ref">We didn&#x27;t get the chance just now. He&#x27;s really moving at full speed now</div>
+            <div class="k">GLM-4-Plus</div><div class="v">You weren&#x27;t available earlier, and now time is flying by.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">There was no chance just now—you are really rushing the time now in a muddle.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#7</span>
+            <span class="pills"><span class='pill'>嘎嘎</span></span>
+            <span class="scores">COMET&nbsp; GLM 54.3 · DS 44.3</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">的小西嘎嘎走</div>
+            <div class="k">参考译文</div><div class="v ref">Walk it out!</div>
+            <div class="k">GLM-4-Plus</div><div class="v">My little one is walking around.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">Walk step by step, little by little.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#8</span>
+            <span class="pills"><span class='pill'>安逸</span><span class='pill'>巴适</span></span>
+            <span class="scores">COMET&nbsp; GLM 51.8 · DS 50.0</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">那就安逸下酒干巴适得干</div>
+            <div class="k">参考译文</div><div class="v ref">Now this is what I call the ultimate booze food! Pure bliss!</div>
+            <div class="k">GLM-4-Plus</div><div class="v">That&#x27;s some fine dried meat to go with my drink—completely satisfying!</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">That&#x27;s so satisfying, perfect with a drink—dry it up, just right!</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#9</span>
+            <span class="pills"><span class='pill'>老子</span></span>
+            <span class="scores">COMET&nbsp; GLM 51.7 · DS 53.6</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">哎呀给老子坐车不远啊你</div>
+            <div class="k">参考译文</div><div class="v ref">Oh, come on, just get in the damn car! It&#x27;s far away!</div>
+            <div class="k">GLM-4-Plus</div><div class="v">Hey, it&#x27;s not far for me to take the car and pick you up.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">Oh man, it&#x27;s not far for me to take the bus, you know.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#10</span>
+            <span class="pills"><span class='pill'>安逸</span></span>
+            <span class="scores">COMET&nbsp; GLM 52.6 · DS 54.3</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">那就地下货啊安逸我就害怕冷点心啊这个干完这</div>
+            <div class="k">参考译文</div><div class="v ref">Then let&#x27;s go with this one. Nice! I just don&#x27;t like cold desserts. Let&#x27;s finish this first.</div>
+            <div class="k">GLM-4-Plus</div><div class="v">That underground goods are so comfortable, I&#x27;m just afraid of cold snacks, after this is done.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">That&#x27;s real good stuff down there — I&#x27;m just afraid of catching a chill, but once this bit&#x27;s done, it&#x27;s all good.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#11</span>
+            <span class="pills"><span class='pill'>硬是</span></span>
+            <span class="scores">COMET&nbsp; GLM 54.8 · DS 52.9</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">你硬是没把他打的跑得快哟我想要大一个</div>
+            <div class="k">参考译文</div><div class="v ref">You really beat him so badly that he ran for his life. I&#x27;ll take the bigger one.</div>
+            <div class="k">GLM-4-Plus</div><div class="v">He really wasn&#x27;t running fast enough for me. I want a bigger one.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">You really didn&#x27;t make him run fast enough! I want to grow bigger.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#12</span>
+            <span class="pills"><span class='pill'>啥子</span></span>
+            <span class="scores">COMET&nbsp; GLM 49.1 · DS 59.2</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">至于说为啥子后来这个两头王又成了夫妻肺片儿了</div>
+            <div class="k">参考译文</div><div class="v ref">As for the reason why &#x27;Liangtouwang&#x27; was eventually renamed to &#x27;Couples&#x27; Lung Slices&#x27;...</div>
+            <div class="k">GLM-4-Plus</div><div class="v">As for why the &#x27;Two Kings&#x27; later became &#x27;Sliced Beef and Ox Tongue in Chili Sauce&#x27;.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">As for why this &quot;double-headed king&quot; later became known as &quot;couple&#x27;s lung slices&quot; (fuqi feipian),</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#13</span>
+            <span class="pills"><span class='pill'>安逸</span></span>
+            <span class="scores">COMET&nbsp; GLM 55.0 · DS 54.8</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">是哎分厂的做可以的啊是分厂煮好多点煮粉才安逸</div>
+            <div class="k">参考译文</div><div class="v ref">Yeah, the pork intestine is done well. Let it cook a little longer—it&#x27;s much better once it&#x27;s fully cooked.</div>
+            <div class="k">GLM-4-Plus</div><div class="v">The food at the branch factory is really good! They make so many more rice noodles there, which makes it so much more enjoyable.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">That&#x27;s right, the branch factory does a decent job. It’s the branch factory that makes a lot more noodles—only then is it truly satisfying.</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#14</span>
+            <span class="pills"><span class='pill'>老子</span></span>
+            <span class="scores">COMET&nbsp; GLM 56.7 · DS 54.3</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">你这么多钱怎么把老子憋死啊</div>
+            <div class="k">参考译文</div><div class="v ref">You think you can smoke me out just because you&#x27;re rich?</div>
+            <div class="k">GLM-4-Plus</div><div class="v">With all that money, how could you possibly leave me broke?</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">&quot;With all this money you&#x27;ve got, how are you trying to squeeze me dry?&quot;</div>
+          </div>
+        </div>
+        <div class="case">
+          <div class="case-head">
+            <span class="rank">#15</span>
+            <span class="pills"><span class='pill'>扯把子</span><span class='pill'>噻</span></span>
+            <span class="scores">COMET&nbsp; GLM 56.6 · DS 54.7</span>
+          </div>
+          <div class="case-grid">
+            <div class="k">四川话</div><div class="v">哎就觉得些就是朋友些噻在喝酒啊扯把子啊在吹牛这些</div>
+            <div class="k">参考译文</div><div class="v ref">That&#x27;s what friends do—they get together for drinks, chat, joke around, and brag a little.</div>
+            <div class="k">GLM-4-Plus</div><div class="v">I just feel like it&#x27;s friends getting together, drinking, chatting, and shooting the breeze.</div>
+            <div class="k">DeepSeek-V4-Flash</div><div class="v">Oh, they’re just hanging out with friends, you know—drinking, shooting the breeze, shooting the bull.</div>
+          </div>
+        </div>
+
+  <div class="foot"><span>完整逐句分数：translation_segment_scores.csv</span><span>系统级 BLEU/chrF/COMET：translation_scores.txt</span></div>
+</div></body></html>

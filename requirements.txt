@@ -1,0 +1,5 @@
+pandas>=2.0
+openai>=1.0
+sacrebleu>=2.3
+huggingface_hub>=0.20
+requests>=2.28
