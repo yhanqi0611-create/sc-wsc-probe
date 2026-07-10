@@ -15,7 +15,7 @@ We release a **200-sentence keyword-stratified probe** from [WenetSpeech-Chuan](
 | `reverse_misalignment_cases.csv` | Five COMET–human divergence cases |
 | `translation_scores.txt` | Full system-level report |
 | `docs/annotation_guidelines.md` | Human cultural adequacy protocol (excerpt) |
-| `paper/` | LaTeX manuscript |
+| `generate_figures.py` | Generate COMET parity / label-distribution figures |
 
 ## Human labels (`preference`)
 

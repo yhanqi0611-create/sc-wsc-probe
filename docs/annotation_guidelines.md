@@ -26,6 +26,6 @@ Annotators judge **cultural/pragmatic transmission**, not fluency alone.
 - **Reject:** neutral “silly person” that defuses pragmatic aggression.
 
 ## Workflow
-1. Two bilingual annotators labeled all 200 sentences **independently** (model IDs blinded).
+1. Two native Sichuanese-speaking annotators with professional-level English proficiency labeled all 200 sentences **independently** (model IDs blinded).
 2. Disagreements were discussed to reach **consensus** gold labels.
 3. Pre-consensus Cohen's κ = 0.71.
